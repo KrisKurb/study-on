@@ -15,21 +15,21 @@ class AppFixtures extends Fixture
             [
                 'code' => 'DSFDFSDFDSLFLHGLHLG',
                 'name' => 'Курс английского языка (1 уровень)',
-                'description' => 'Благодаря этому курсу, вы познакомитесь с английским языком и его основами.'
+                'description' => 'Благодаря этому курсу, вы познакомитесь с английским языком и его основами.',
             ],
             [
                 'code' => 'DSFDJGMFKGJMDLKLDDD',
                 'name' => 'Курс английского языка (2 уровень)',
                 'description' => 'После овладения этим уровнем, вы сможете с легкостью описывать
-                свои интересы и события, а главное, можно смело отправляться в путешествия!'
+                свои интересы и события, а главное, можно смело отправляться в путешествия!',
             ],
             [
                 'code' => 'DSFDFSDFDFDFFSDFSDG',
                 'name' => 'Курс английского языка (3 уровень)',
                 'description' => 'Курс, который подводит итог под изучением грамматики, 
                 дает уверенное владение английским. 
-                На данном уровне можно без труда пройти любые собеседования и даже поступить в зарубежные ВУЗы.'
-            ]
+                На данном уровне можно без труда пройти любые собеседования и даже поступить в зарубежные ВУЗы.',
+            ],
         ];
 
         $lessonObject = [
@@ -44,49 +44,49 @@ class AppFixtures extends Fixture
                    наполовину синий. Хотя в самом начале мы её отнесли к числу согласных, вы можете считать её гласной,
                     если вам так больше нравится. Это на самом деле большого значения не играет. 
                     Важно какой звук она будет давать.',
-                'number'=>random_int(1, 1000)
+                'number'=>random_int(1, 1000),
             ],
             [
                 'name'=>'1.2 урок. Произношение',
                 'material'=>'Удвоенные согласные произносятся как один согласный звук: hobby.
                 Звонкие согласные в конце слова не становятся глухими, т.е. если написано dog.мы и произносим, не "док".
                  "Док" это "доктор", навряд ли ваша собака имеет ученую степень.',
-                'number'=>random_int(1, 1000)
+                'number'=>random_int(1, 1000),
             ],
             [
                 'name'=>'1.3 урок. Чтение',
                 'material'=>'Здесь мы просто почитаем тексты)',
-                'number'=>random_int(1, 1000)
+                'number'=>random_int(1, 1000),
             ],
             [
                 'name'=>'2.1 урок. Чтение',
                 'material'=>'Здесь мы просто почитаем тексты)',
-                'number'=>random_int(1, 1000)
+                'number'=>random_int(1, 1000),
             ],
             [
                 'name'=>'2.2 урок. Чтение',
                 'material'=>'Здесь мы просто еще почитаем тексты)',
-                'number'=>random_int(1, 1000)
+                'number'=>random_int(1, 1000),
             ],
             [
                 'name'=>'2.3 урок. Чтение',
                 'material'=>'Здесь мы просто еще больше почитаем тексты)',
-                'number'=>random_int(1, 1000)
+                'number'=>random_int(1, 1000),
             ],
             [
                 'name'=>'3.1 урок. Разговорный английский',
                 'material'=>'Здесь мы поговорим)',
-                'number'=>random_int(1, 1000)
+                'number'=>random_int(1, 1000),
             ],
             [
                 'name'=>'3.2 урок. Чтение',
                 'material'=>'Здесь мы еще поговорим)',
-                'number'=>random_int(1, 1000)
+                'number'=>random_int(1, 1000),
             ],
             [
                 'name'=>'3.3 урок. Чтение',
                 'material'=>'Здесь мы еще больше поговорим',
-                'number'=>random_int(1, 1000)
+                'number'=>random_int(1, 1000),
             ],
             ];
         //фикстуры для курсов
@@ -99,7 +99,7 @@ class AppFixtures extends Fixture
             $manager->flush();
 
             //фикстуры для уроков
-            if ($courseObj['name']=='Курс английского языка (1 уровень)') {
+            if ('Курс английского языка (1 уровень)' == $courseObj['name']) {
                 for ($i=0; $i<3; $i++) {
                     $lesson=new Lesson();
                     $lesson->setName($lessonObject[$i]['name']);
@@ -107,10 +107,9 @@ class AppFixtures extends Fixture
                     $lesson->setMaterial($lessonObject[$i]['material']);
                     $lesson->setNumber($lessonObject[$i]['number']);
                     $manager->persist($lesson);
-                    $manager->flush();
                 }
             }
-            if ($courseObj['name']=='Курс английского языка (2 уровень)') {
+            if ('Курс английского языка (2 уровень)' == $courseObj['name']) {
                 for ($i=3; $i<6; $i++) {
                     $lesson = new Lesson();
                     $lesson->setName($lessonObject[$i]['name']);
@@ -118,10 +117,9 @@ class AppFixtures extends Fixture
                     $lesson->setMaterial($lessonObject[$i]['material']);
                     $lesson->setNumber($lessonObject[$i]['number']);
                     $manager->persist($lesson);
-                    $manager->flush();
                 }
             }
-            if ($courseObj['name']=='Курс английского языка (3 уровень)') {
+            if ('Курс английского языка (3 уровень)' == $courseObj['name']) {
                 for ($i=6; $i<9; $i++) {
                     $lesson=new Lesson();
                     $lesson->setName($lessonObject[$i]['name']);
@@ -129,9 +127,9 @@ class AppFixtures extends Fixture
                     $lesson->setMaterial($lessonObject[$i]['material']);
                     $lesson->setNumber($lessonObject[$i]['number']);
                     $manager->persist($lesson);
-                    $manager->flush();
                 }
             }
         }
+        $manager->flush();
     }
 }

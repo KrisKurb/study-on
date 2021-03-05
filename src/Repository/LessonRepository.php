@@ -19,6 +19,17 @@ class LessonRepository extends ServiceEntityRepository
         parent::__construct($registry, Lesson::class);
     }
 
+    public function sortLessonAsc($value)
+    {
+        return $this->createQueryBuilder('l')
+            ->andWhere('l.course = :val')
+            ->setParameter('val', $value)
+            ->orderBy('l.number', 'ASC')
+            ->getQuery()
+            ->getResult()
+            ;
+    }
+
     // /**
     //  * @return Lesson[] Returns an array of Lesson objects
     //  */

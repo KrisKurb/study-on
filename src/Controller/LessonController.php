@@ -2,9 +2,9 @@
 
 namespace App\Controller;
 
+use App\Entity\Course;
 use App\Entity\Lesson;
 use App\Form\LessonType;
-use App\Entity\Course;
 use App\Repository\LessonRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityNotFoundException;
@@ -29,12 +29,13 @@ class LessonController extends AbstractController
     }
 
     /**
-     * @Route("/new/{course}", name="lesson_new", methods={"GET","POST"})
+     * @Route("/new", name="lesson_new", methods={"GET","POST"})
      */
-    public function new(int $course, Request $request, EntityManagerInterface $entityManager): Response
+    public function new(Request $request, EntityManagerInterface $entityManager): Response
     {
-        $course = $entityManager->getRepository(Course::class)->find($course);
-        if (! $course) {
+        $courseId = $request->query->get('course_id');
+        $course = $entityManager->getRepository(Course::class)->find($courseId);
+        if (!$course) {
             throw new EntityNotFoundException('Course object was not found');
         }
         $lesson = new Lesson();
