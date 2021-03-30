@@ -3,28 +3,13 @@
 {% block title %}Lesson{% endblock %}
 
 {% block body %}
-    <h1>Lesson</h1>
+    <h1 class="font-weight-bold m-3">Урок</h1>
+    <h2 class="m-3"><a href="{{ path('course_show', {'id': lesson.course.id}) }}">{{ lesson.course.name }}</a></h2>
 
-    <table class="table">
-        <tbody>
-            <tr>
-                <th>Name</th>
-                <td>{{ lesson.name }}</td>
-            </tr>
-            <tr>
-                <th>Course</th>
-                <td><a href="{{ path('course_show', {'id': lesson.course.id}) }}">{{ lesson.course.name }}</a> </td>
-            </tr>
-            <tr>
-                <th>Material</th>
-                <td>{{ lesson.material }}</td>
-            </tr>
-        </tbody>
-    </table>
+    <div class="d-flex mt-3 mb-4">
+    <a href="{{ path('course_show', {'id': lesson.course.id}) }}" class="btn btn-outline-secondary ml-2 mr-3">К списку уроков</a>
 
-    <a href="{{ path('course_show', {'id': lesson.course.id}) }}">back to list</a>
-
-    <a href="{{ path('lesson_edit', {'id': lesson.id}) }}">edit</a>
-
+    <a href="{{ path('lesson_edit', {'id': lesson.id}) }}" id="lesson_edit" class="btn btn-outline-secondary mr-3">Редактировать</a>
+    </div>
     {{ include('lesson/_delete_form.html.twig') }}
 {% endblock %}

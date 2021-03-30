@@ -96,7 +96,6 @@ class AppFixtures extends Fixture
             $course->setName($courseObj['name']);
             $course->setDescription($courseObj['description']);
             $manager->persist($course);
-            $manager->flush();
 
             //фикстуры для уроков
             if ('Курс английского языка (1 уровень)' == $courseObj['name']) {
