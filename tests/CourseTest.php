@@ -8,7 +8,7 @@ use App\Entity\Course;
 class CourseTest extends AbstractTest
 {
 
-    private $base_route = '/course';
+    private $base_route = '/courses';
 
     // Переопределение метода для фикстур
     protected function getFixtures(): array
