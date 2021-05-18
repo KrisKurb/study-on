@@ -74,7 +74,7 @@ class CourseTest extends AbstractTest
 
         // Проверка 404 ошибки
         $client = self::getClient();
-        $url = $this->getPath() . '/13';
+        $url = $this->getPath() . '/1000';
         $client->request('GET', $url);
         $this->assertResponseNotFound();
     }
