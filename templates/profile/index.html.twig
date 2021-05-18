@@ -13,4 +13,7 @@
         {% endif %}
     </p>
     <p>Баланс: {{ userDto.balance }}</p>
+    <a class="btn btn-primary" href="{{ path('profile_transactions') }}" role="button">
+        История
+    </a>
 {% endblock %}

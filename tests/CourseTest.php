@@ -4,13 +4,23 @@ namespace App\Tests;
 
 use App\DataFixtures\AppFixtures;
 use App\Entity\Course;
+use App\Tests\Login\Auth;
+use JMS\Serializer\SerializerInterface;
 
 class CourseTest extends AbstractTest
 {
 
     private $base_route = '/courses';
 
-    // Переопределение метода для фикстур
+    /** @var SerializerInterface */
+    private $serializer;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->serializer = self::$container->get(SerializerInterface::class);
+    }
+
     protected function getFixtures(): array
     {
         return [AppFixtures::class];
@@ -22,23 +32,49 @@ class CourseTest extends AbstractTest
         return $this->base_route;
     }
 
+    // Проверка на корректный http-статус для всех GET/POST методов
     /**
      * @dataProvider urlProvider
+     * @param $url
      */
-    //Проверяем корректно ли отображаются страницы
     public function testPageIsSuccessful($url): void
     {
-        // Эмуляция клиента
+        $auth = new Auth();
+        $auth->setSerializer($this->serializer);
+        // Авторизуемся админом
+        $data = [
+            'username' => 'admin@mail.ru',
+            'password' => '123456'
+        ];
+        $requestData = $this->serializer->serialize($data, 'json');
+        $crawler = $auth->auth($requestData);
+
         $client = self::getClient();
-        // Клиент переходит на определенный url
         $client->request('GET', $url);
-        // Проверяем, что ответ от страницы успешный
         self::assertResponseIsSuccessful();
+
+        $em = self::getEntityManager();
+        $courses = $em->getRepository(Course::class)->findAll();
+        self::assertNotEmpty($courses);
+
+        // Проходим все возможные страницы GET/POST связанных с курсом
+        foreach ($courses as $course) {
+            self::getClient()->request('GET', $this->getPath() . '/' . $course->getId());
+            $this->assertResponseOk();
+
+            self::getClient()->request('GET', $this->getPath() . '/' . $course->getId() . '/edit');
+            $this->assertResponseOk();
+
+            self::getClient()->request('POST', $this->getPath() . '/new');
+            $this->assertResponseOk();
+
+            self::getClient()->request('POST', $this->getPath() . '/' . $course->getId() . '/edit');
+            $this->assertResponseOk();
+        }
 
         // Проверка 404 ошибки
         $client = self::getClient();
-        // Переходим по несуществующему пути
-        $url = $this->getPath() . '/745';
+        $url = $this->getPath() . '/13';
         $client->request('GET', $url);
         $this->assertResponseNotFound();
     }
@@ -52,96 +88,124 @@ class CourseTest extends AbstractTest
     // Тесты главной страницы курсов
     public function testCourseIndex(): void
     {
+        // Авторизация
+        $auth = new Auth();
+        $auth->setSerializer($this->serializer);
+        // Авторизуемся обычным пользователем
+        $data = [
+            'username' => 'user@mail.ru',
+            'password' => '123456'
+        ];
+        $requestData = $this->serializer->serialize($data, 'json');
+        $crawler = $auth->auth($requestData);
+
         $client = self::getClient();
-        // Переходим на главную страницу курсов
         $crawler = $client->request('GET', $this->getPath() . '/');
-        // Страница существует
         $this->assertResponseOk();
 
-        //  Узнаем, сколько курсов в нашей БД
-        $courses = self::getEntityManager()->getRepository(Course::class)->findAll();
-        // Курсы не пустые
+        //  Получаем количество курсов из БД
+        $em = self::getEntityManager();
+        $courses = $em->getRepository(Course::class)->findAll();
         self::assertNotEmpty($courses);
-        $countCourses = count($courses);
+        $coursesCountFromBD = count($courses);
+        $coursesCount = $crawler->filter('div.card')->count();
 
-        // Получение количества курсов по фильтрации класса card
-        $countCoursesOfPage = $crawler->filter('div.card')->count();
+        // Проверим кол-во курсов на странице
+        self::assertEquals($coursesCountFromBD, $coursesCount);
 
-        // Сравним количество в БД и количество курсов на самой странице
-        self::assertEquals($countCourses, $countCoursesOfPage);
+        // Пробуем зайти на главную страницу неавторизированным
+        // Выходим из учетки
+        $linkLogout = $crawler->selectLink('Выход')->link();
+        $crawler = $client->click($linkLogout);
+        $this->assertResponseRedirect();
+        self::assertEquals('/logout', $client->getRequest()->getPathInfo());
+
+        // Редиректит
+        $crawler = $client->followRedirect();
+        $this->assertResponseRedirect();
+        self::assertEquals('/', $client->getRequest()->getPathInfo());
+        $crawler = $client->followRedirect();
+        self::assertEquals('/courses/', $client->getRequest()->getPathInfo());
+        // Проверяем ответ
+        $this->assertResponseOk();
     }
 
-    // Тесты страницы определенного курса
+    // Тесты страницы конкретного курса
     public function testCourseShow(): void
     {
-        $courses = self::getEntityManager()->getRepository(Course::class)->findAll();
+        $auth = new Auth();
+        $auth->setSerializer($this->serializer);
+        // Авторизируемся обычным пользователем
+        $data = [
+            'username' => 'user@mail.ru',
+            'password' => '123456'
+        ];
+        $requestData = $this->serializer->serialize($data, 'json');
+        $crawler = $auth->auth($requestData);
+
+        $em = self::getEntityManager();
+        $courses = $em->getRepository(Course::class)->findAll();
         self::assertNotEmpty($courses);
-        // Перебираем курсы
+
         foreach ($courses as $course) {
-            $crawler = self::getClient()->request('GET', $this->getPath() . '/' . $course->getId());
-            $this->assertResponseOk();
+            if ($course->getCode() === 'DSFDFSDFDFDFFSDFSDG') {
+                $crawler = self::getClient()->request('GET', $this->getPath() . '/' . $course->getId());
+                $this->assertResponseOk();
 
-            // Получаем фактическое количество уроков для данного курса из БД
-            $countLesson = count($course->getLessons());
-            // Проверка количества уроков для конкретного курса
-            $countLessonOfPage = $crawler->filter('ol > li')->count();
-
-            // Проверка количества уроков в курсе
-            static::assertEquals($countLesson, $countLessonOfPage);
+                // Проверим кол-во уроков для определенного курса
+                $lessonsCount = $crawler->filter('ol > li')->count();
+                // Получаем кол-во уроков для курса
+                $lessonsCountFromBD = count($course->getLessons());
+                static::assertEquals($lessonsCountFromBD, $lessonsCount);
+            } elseif ($course->getCode() === 'LFGFDGJFDJJCHJV4514') {
+                self::getClient()->request('GET', $this->getPath() . '/' . $course->getId());
+                self::assertResponseStatusCodeSame(500);
+            }
         }
     }
-    // Тест страницы добавления курса,
+
+        // Тест страницы добавления курса,
     public function testCourseNew(): void
     {
-        // Начинаем со страницы, на которой все курсы
+        $auth = new Auth();
+        $auth->setSerializer($this->serializer);
+        // Авторизуемся админом
+        $data = [
+            'username' => 'admin@mail.ru',
+            'password' => '123456'
+        ];
+        $requestData = $this->serializer->serialize($data, 'json');
+        $crawler = $auth->auth($requestData);
+
+        // Главная страница с курсами
         $client = self::getClient();
         $crawler = $client->request('GET', $this->getPath() . '/');
         $this->assertResponseOk();
 
-        // Создаем новый курс
-        // Получаем ссылку на новый курс
+        // Создадим новый курс
         $link = $crawler->filter('#course_new')->link();
-        // Кликнули и переходим
         $client->click($link);
         $this->assertResponseOk();
 
-        // Проверяем заполнение полей формы
+        // Проверяем заполнение формы
         $client->submitForm('course_save', [
-            'course[code]' => 'fdmndvgnfdfvdd',
+            'course[code]' => 'ddfvcbgffbh',
             'course[name]' => 'Тест',
-            'course[description]' => 'Тест',
+            'course[price]' => 700,
+            'course[type]' => 'rent',
+            'course[description]' => 'Тестовый',
         ]);
-        // Проверка редиректа на главную страницу курсов
+        // Проверка редиректа
         self::assertTrue($client->getResponse()->isRedirect($this->getPath() . '/'));
-        // Переходим на страницу редиректа
         $crawler = $client->followRedirect();
 
-        // Перейдём на страницу добавленного курса
-        // Нажимаем на последнюю ссылку (последниц добавленный курс)
-        $link = $crawler->filter('#course_select')->last()->link();
+        // Перейдем на страницу курса, который добавили
+        $link = $crawler->filter('a.card-link')->last()->link();
         $client->click($link);
         $this->assertResponseOk();
-
-        // Удаляем
-        // Нажимаем кнопку удалить
-        $client->submitForm('course_delete');
-        // Проверка редиректа на главную страницу курсов
-        self::assertTrue($client->getResponse()->isRedirect($this->getPath() . '/'));
-        // Переходим на страницу редиректа
-        $crawler = $client->followRedirect();
-        $this->assertResponseOk();
-
-        // Проверяем количество курсов после удаления на главной странице
-        $countCoursesOfPage = $crawler->filter('div.card')->count();
-        //  Узнаем, сколько курсов в нашей БД
-        $courses = self::getEntityManager()->getRepository(Course::class)->findAll();
-        self::assertNotEmpty($courses);
-        $countCourses = count($courses);
-        // Сравниваем количество курсов на странице с количеством в БД
-        self::assertEquals($countCourses, $countCoursesOfPage);
 
         // Проверим заполнение формы невалидными значениями
-        // Тест страницы добавления курса с невалидным полем code
+        // С невалидным полем code
         $client = self::getClient();
         $crawler = $client->request('GET', $this->getPath() . '/');
         $this->assertResponseOk();
@@ -156,80 +220,86 @@ class CourseTest extends AbstractTest
         $crawler = $client->submitForm('course_save', [
             'course[code]' => '',
             'course[name]' => 'Тест',
-            'course[description]' => 'Тест',
+            'course[price]' => 700,
+            'course[type]' => 'rent',
+            'course[description]' => 'Тестовый',
         ]);
 
-        // Список ошибок
+        // Ошибки
         $error = $crawler->filter('span.form-error-message')->first();
-        // Сравниваем ошибку, которая вывелась с той, которую мы задали
         self::assertEquals('Code can not be empty', $error->text());
 
-        // Проверка перезаполнения поля code (более 255 символов)
-        // Заполняем форму
+        // Проверим перезаполнение поля code (более 255 символов)
+        // Заполним форму
         $crawler = $client->submitForm('course_save', [
             'course[code]' => 'kfdjkjdklxmvdsssssssssssssssdsssssssssssssssssssssssssffffff
             fffffffffffffffffffffffffffffjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjsssssssssssssssssssee
             eeeeeeeeeeeeeeeeeeeeeeeeeeeeeppppppppppppppppppppppvvvvvvvvvvvvvvvvvvvvvvvvkkkkk
             kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkddddddddddddddddddddddddddddddddddd',
             'course[name]' => 'Тест',
-            'course[description]' => 'Тест',
+            'course[price]' => 700,
+            'course[type]' => 'rent',
+            'course[description]' => 'Тестовый',
         ]);
 
-        // Список ошибок
+        // Ошибки
         $error = $crawler->filter('span.form-error-message')->first();
         self::assertEquals('Maximum code length is 255 symbols', $error->text());
 
-        // Делаем поле name невалидным
         $client = self::getClient();
         $crawler = $client->request('GET', $this->getPath() . '/');
         $this->assertResponseOk();
 
-        // Перейдём к форме добавления курса
+        // Перейдем к форме добавления курса
         $link = $crawler->filter('#course_new')->link();
         $client->click($link);
         $this->assertResponseOk();
 
-        // Заполняем форму
+        // Заполним форму
         $crawler = $client->submitForm('course_save', [
             'course[code]' => 'fdmnkgmkfdmkl',
             'course[name]' => '',
-            'course[description]' => 'Тест',
+            'course[price]' => 700,
+            'course[type]' => 'rent',
+            'course[description]' => 'Тестовый',
         ]);
 
-        // Список ошибок
+        // Ошибки
         $error = $crawler->filter('span.form-error-message')->first();
         self::assertEquals('Name can not be empty', $error->text());
 
         // Проверка перезаполнения поля name (более 255 символов)
-        // Заполняем форму
         $crawler = $client->submitForm('course_save', [
             'course[code]' => 'fdmnkgmkfdmkl',
             'course[name]' => 'kfdjkjdklxmvdsssssssssssssssdsssssssssssssssssssssssssffffff
             fffffffffffffffffffffffffffffjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjsssssssssssssssssssee
             eeeeeeeeeeeeeeeeeeeeeeeeeeeeeppppppppppppppppppppppvvvvvvvvvvvvvvvvvvvvvvvvkkkkk
             kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkddddddddddddddddddddddddddddddddddd',
-            'course[description]' => 'Тест',
+            'course[price]' => 700,
+            'course[type]' => 'rent',
+            'course[description]' => 'Тестовый',
         ]);
 
-        // Список ошибок
+        // Ошибки
         $error = $crawler->filter('span.form-error-message')->first();
         self::assertEquals('Maximum name length is 255 symbols', $error->text());
 
-        // Делаем поле description невалидным
+        // Делаем description невалидным
         $client = self::getClient();
         $crawler = $client->request('GET', $this->getPath() . '/');
         $this->assertResponseOk();
 
-        // Перейдём к форме добавления курса
+        // Перейдем к форме добавления курса
         $link = $crawler->filter('#course_new')->link();
         $client->click($link);
         $this->assertResponseOk();
 
         // Проверка перезаполнения поля description (более 1000 символов)
-        // Заполнение полей формы
         $crawler = $client->submitForm('course_save', [
             'course[code]' => 'fdmnkgmkfdmkl',
             'course[name]' => 'Тест',
+            'course[price]' => 700,
+            'course[type]' => 'rent',
             'course[description]' => 'kfdjkjdklxmvdsssssssssssssssdsssssssssssssssssssssssss
             fffffffffffffffffffffffffffffffffffjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjsssssssssssssss
             eeeeeeeeeeeeeeeeeeeeeeeeeeeeeppppppppppppppppppppppvvvvvvvvvvvvvvvvvvvvvvvvkkkkk
@@ -248,44 +318,51 @@ class CourseTest extends AbstractTest
             kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkdddddddddddddddddddddddddddddddddddssssee',
         ]);
 
-        // Список ошибок
+        // Ошибки
         $error = $crawler->filter('span.form-error-message')->first();
         self::assertEquals('Maximum description length is 1000 symbols', $error->text());
     }
 
-    // Тест страницы редактирование курса
+        // Тест страницы редактирования курса
     public function testCourseEdit(): void
     {
-        // Начинаем со страницы, на которой все курсы
+        $auth = new Auth();
+        $auth->setSerializer($this->serializer);
+        // Авторизуемся админом
+        $data = [
+            'username' => 'admin@mail.ru',
+            'password' => '123456'
+        ];
+        $requestData = $this->serializer->serialize($data, 'json');
+        $crawler = $auth->auth($requestData);
+
         $client = self::getClient();
         $crawler = $client->request('GET', $this->getPath() . '/');
         $this->assertResponseOk();
 
-        // Перейдем к редактированию последнего курса
-        $link = $crawler->filter('#course_select')->last()->link();
+        // Перейдем к редактированию первого курса на странице
+        $link = $crawler->filter('a.card-link')->first()->link();
         $crawler = $client->click($link);
         $this->assertResponseOk();
 
-        // Нажимаем кнопку редактирования
-        $link = $crawler->filter('#course_edit')->link();
+        $link = $crawler->filter('a.course__edit')->link();
         $crawler = $client->click($link);
         $this->assertResponseOk();
 
-        // Изменим значения полей формы
         $form = $crawler->selectButton('course_save')->form();
-        // Получим id кода из формы
-        $course = self::getEntityManager()->getRepository(Course::class)->
-        findOneBy(['code' => $form['course[code]']->getValue()]);
-        // Изменяем поля в форме
-        $form['course[code]'] = 'fdmnkgmkfdmkl';
-        $form['course[name]'] = 'Test';
-        $form['course[description]'] = 'Test';
-        // Отправляем форму
+        $em = self::getEntityManager();
+        $course = $em->getRepository(Course::class)->findOneBy(['code' => $form['course[code]']->getValue()]);
+        // Изменим поля в форме
+        $form['course[code]'] = 'VGKDKMFMM124';
+        $form['course[name]'] = 'Пример';
+        $form['course[price]'] = 1500;
+        $form['course[type]'] = 'rent';
+        $form['course[description]'] = 'Курс для примера';
+        // Отправим форму
         $client->submit($form);
 
-        // Проверяем редирект на изменённый курс
-        self::assertTrue($client->getResponse()->isRedirect($this->getPath() . '/' . $course->getId()));
-        // Переходим на страницу редиректа
+        // Проверим редирект
+        $this->assertResponseRedirect();
         $crawler = $client->followRedirect();
         $this->assertResponseOk();
     }

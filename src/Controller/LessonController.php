@@ -8,6 +8,7 @@ use App\Form\LessonType;
 use App\Repository\LessonRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityNotFoundException;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -30,6 +31,7 @@ class LessonController extends AbstractController
 
     /**
      * @Route("/new", name="lesson_new", methods={"GET","POST"})
+     * @IsGranted("ROLE_SUPER_ADMIN")
      */
     public function new(Request $request, EntityManagerInterface $entityManager): Response
     {
@@ -71,6 +73,7 @@ class LessonController extends AbstractController
 
     /**
      * @Route("/{id}/edit", name="lesson_edit", methods={"GET","POST"})
+     * @IsGranted("ROLE_SUPER_ADMIN")
      */
     public function edit(Request $request, Lesson $lesson): Response
     {
@@ -94,6 +97,7 @@ class LessonController extends AbstractController
 
     /**
      * @Route("/{id}", name="lesson_delete", methods={"DELETE"})
+     * @IsGranted("ROLE_SUPER_ADMIN")
      */
     public function delete(Request $request, Lesson $lesson): Response
     {

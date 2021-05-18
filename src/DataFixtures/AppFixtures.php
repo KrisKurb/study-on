@@ -12,6 +12,45 @@ class AppFixtures extends Fixture
     public function load(ObjectManager $manager)
     {
         $courseObjects = [
+            // Для аренды
+            [
+                'code' => 'LFGFDGJFDJJCHJVHJF5',
+                'name' => 'Курс испанского языка (1 уровень)',
+                'description' => 'Благодаря этому курсу, вы познакомитесь с испанским языком и его основами.',
+            ],
+            [
+                'code' => 'LFGFDGJFDJJCHJV4514',
+                'name' => 'Курс испанского языка (2 уровень)',
+                'description' => 'После овладения этим уровнем, вы сможете с легкостью описывать
+                свои интересы и события, а главное, можно смело отправляться в путешествия!',
+            ],
+            [
+                'code' => 'LFGFDGJFDJJCHJV4511',
+                'name' => 'Курс испанского языка (3 уровень)',
+                'description' => 'Курс, который подводит итог под изучением грамматики, 
+                дает уверенное владение испанским. 
+                На данном уровне можно без труда пройти любые собеседования и даже поступить в зарубежные ВУЗы.',
+            ],
+            //Бесплатные
+            [
+                'code' => 'JVJNJKBNDNJFDDFF444',
+                'name' => 'Курс корейского языка (1 уровень)',
+                'description' => 'Благодаря этому курсу, вы познакомитесь с корейским языком и его основами.',
+            ],
+            [
+                'code' => 'JVJNJKBNDNJFDDFF445',
+                'name' => 'Курс корейского языка (2 уровень)',
+                'description' => 'После овладения этим уровнем, вы сможете с легкостью описывать
+                свои интересы и события, а главное, можно смело отправляться в путешествия!',
+            ],
+            [
+                'code' => 'JVJNJKBNDNJFDDFF447',
+                'name' => 'Курс корейского языка (3 уровень)',
+                'description' => 'Курс, который подводит итог под изучением грамматики, 
+                дает уверенное владение корейским. 
+                На данном уровне можно без труда пройти любые собеседования и даже поступить в зарубежные ВУЗы.',
+            ],
+            // Для покупки
             [
                 'code' => 'DSFDFSDFDSLFLHGLHLG',
                 'name' => 'Курс английского языка (1 уровень)',
@@ -33,6 +72,69 @@ class AppFixtures extends Fixture
         ];
 
         $lessonObject = [
+            // Для аренды
+            [
+                'name'=>'1.1 урок. Алфавит',
+                'material'=>'Здесь мы изучим алфавит',
+                'number'=>random_int(1, 1000),
+            ],
+            [
+                'name'=>'1.2 урок. Произношение',
+                'material'=>'Здесь мы поработаем над произношением',
+                'number'=>random_int(1, 1000),
+            ],
+            [
+                'name'=>'2.1 урок. Чтение',
+                'material'=>'Здесь мы просто почитаем тексты',
+                'number'=>random_int(1, 1000),
+            ],
+            [
+                'name'=>'2.2 урок. Речь',
+                'material'=>'Здесь мы поговорим',
+                'number'=>random_int(1, 1000),
+            ],
+            [
+                'name'=>'3.1 урок. Разговорный корейский',
+                'material'=>'Здесь мы еще поговорим',
+                'number'=>random_int(1, 1000),
+            ],
+            [
+                'name'=>'3.2 урок. Разговорный корейский',
+                'material'=>'Здесь мы еще больше поговорим',
+                'number'=>random_int(1, 1000),
+            ],
+            //Бесплатные
+            [
+                'name'=>'1.1 урок. Алфавит',
+                'material'=>'Здесь мы изучим алфавит',
+                'number'=>random_int(1, 1000),
+            ],
+            [
+                'name'=>'1.2 урок. Произношение',
+                'material'=>'Здесь мы поработаем над произношением',
+                'number'=>random_int(1, 1000),
+            ],
+            [
+                'name'=>'2.1 урок. Чтение',
+                'material'=>'Здесь мы просто почитаем тексты',
+                'number'=>random_int(1, 1000),
+            ],
+            [
+                'name'=>'2.2 урок. Речь',
+                'material'=>'Здесь мы поговорим',
+                'number'=>random_int(1, 1000),
+            ],
+            [
+                'name'=>'3.1 урок. Разговорный корейский',
+                'material'=>'Здесь мы еще поговорим',
+                'number'=>random_int(1, 1000),
+            ],
+            [
+                'name'=>'3.2 урок. Разговорный корейский',
+                'material'=>'Здесь мы еще больше поговорим',
+                'number'=>random_int(1, 1000),
+            ],
+            // Для покупки
             [
                 'name'=>'1.1 урок. Английский алфавит',
                 'material'=>'В алфавите у англичан всего лишь 26 букв: 5 гласных и 21 согласных.
@@ -98,8 +200,9 @@ class AppFixtures extends Fixture
             $manager->persist($course);
 
             //фикстуры для уроков
-            if ('Курс английского языка (1 уровень)' == $courseObj['name']) {
-                for ($i=0; $i<3; $i++) {
+            //Для аренды
+            if ('Курс испанского языка (1 уровень)' === $courseObj['name']) {
+                for ($i=0; $i<2; $i++) {
                     $lesson=new Lesson();
                     $lesson->setName($lessonObject[$i]['name']);
                     $lesson->setCourse($course);
@@ -108,8 +211,70 @@ class AppFixtures extends Fixture
                     $manager->persist($lesson);
                 }
             }
-            if ('Курс английского языка (2 уровень)' == $courseObj['name']) {
-                for ($i=3; $i<6; $i++) {
+            if ('Курс испанского языка (2 уровень)' === $courseObj['name']) {
+                for ($i=2; $i<4; $i++) {
+                    $lesson=new Lesson();
+                    $lesson->setName($lessonObject[$i]['name']);
+                    $lesson->setCourse($course);
+                    $lesson->setMaterial($lessonObject[$i]['material']);
+                    $lesson->setNumber($lessonObject[$i]['number']);
+                    $manager->persist($lesson);
+                }
+            }
+            if ('Курс испанского языка (3 уровень)' === $courseObj['name']) {
+                for ($i=4; $i<6; $i++) {
+                    $lesson=new Lesson();
+                    $lesson->setName($lessonObject[$i]['name']);
+                    $lesson->setCourse($course);
+                    $lesson->setMaterial($lessonObject[$i]['material']);
+                    $lesson->setNumber($lessonObject[$i]['number']);
+                    $manager->persist($lesson);
+                }
+            }
+            //Бесплатные
+            if ('Курс корейского языка (1 уровень)' === $courseObj['name']) {
+                for ($i=6; $i<8; $i++) {
+                    $lesson=new Lesson();
+                    $lesson->setName($lessonObject[$i]['name']);
+                    $lesson->setCourse($course);
+                    $lesson->setMaterial($lessonObject[$i]['material']);
+                    $lesson->setNumber($lessonObject[$i]['number']);
+                    $manager->persist($lesson);
+                }
+            }
+            if ('Курс корейского языка (2 уровень)' === $courseObj['name']) {
+                for ($i=8; $i<10; $i++) {
+                    $lesson=new Lesson();
+                    $lesson->setName($lessonObject[$i]['name']);
+                    $lesson->setCourse($course);
+                    $lesson->setMaterial($lessonObject[$i]['material']);
+                    $lesson->setNumber($lessonObject[$i]['number']);
+                    $manager->persist($lesson);
+                }
+            }
+            if ('Курс корейского языка (3 уровень)' === $courseObj['name']) {
+                for ($i=10; $i<12; $i++) {
+                    $lesson=new Lesson();
+                    $lesson->setName($lessonObject[$i]['name']);
+                    $lesson->setCourse($course);
+                    $lesson->setMaterial($lessonObject[$i]['material']);
+                    $lesson->setNumber($lessonObject[$i]['number']);
+                    $manager->persist($lesson);
+                }
+            }
+            //Платные
+            if ('Курс английского языка (1 уровень)' === $courseObj['name']) {
+                for ($i=12; $i<15; $i++) {
+                    $lesson=new Lesson();
+                    $lesson->setName($lessonObject[$i]['name']);
+                    $lesson->setCourse($course);
+                    $lesson->setMaterial($lessonObject[$i]['material']);
+                    $lesson->setNumber($lessonObject[$i]['number']);
+                    $manager->persist($lesson);
+                }
+            }
+            if ('Курс английского языка (2 уровень)' === $courseObj['name']) {
+                for ($i=15; $i<18; $i++) {
                     $lesson = new Lesson();
                     $lesson->setName($lessonObject[$i]['name']);
                     $lesson->setCourse($course);
@@ -118,8 +283,8 @@ class AppFixtures extends Fixture
                     $manager->persist($lesson);
                 }
             }
-            if ('Курс английского языка (3 уровень)' == $courseObj['name']) {
-                for ($i=6; $i<9; $i++) {
+            if ('Курс английского языка (3 уровень)' === $courseObj['name']) {
+                for ($i=18; $i<21; $i++) {
                     $lesson=new Lesson();
                     $lesson->setName($lessonObject[$i]['name']);
                     $lesson->setCourse($course);

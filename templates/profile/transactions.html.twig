@@ -1,0 +1,51 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}История{% endblock %}
+
+{% block body %}
+    <h1 class="text-center mt-2">История</h1>
+    <div class="row justify-content-center mt-5">
+        <div class="col align-items-center">
+            <table class="table">
+                <thead class="thead-light">
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col" class="w-50">Название</th>
+                    <th scope="col">Дата создания</th>
+                    <th scope="col">Дата окончания</th>
+                    <th scope="col">Тип</th>
+                    <th scope="col">Сумма</th>
+                    <th scope="col">Код курса</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for transactionDto in transactionsDto %}
+                <tr>
+                    <th scope="row">{{ loop.index }}</th>
+                    <td>
+                        {% if courses!= NULL and transactionDto.courseCode != NULL %}
+                            {{ courses[transactionDto.courseCode].name }}
+                        {% elseif transactionDto.courseCode == NULL %}
+                            Пополнение счета
+                        {% endif %}
+                    </td>
+                    <td>{{ transactionDto.createdAt}}</td>
+                    <td>{{ transactionDto.expiresAt }}</td>
+                    <td>{{ transactionDto.type }}</td>
+                    <td>{{ transactionDto.amount }}</td>
+                    <td>
+                        {% if courses != NULL and transactionDto.courseCode != NULL %}
+                            <a href="{{ path('course_show', {'id': courses[transactionDto.courseCode].id }) }}">
+                                {{ transactionDto.courseCode }}
+                            </a>
+                        {% else %}
+                            {{ transactionDto.courseCode }}
+                        {% endif %}
+                    </td>
+                </tr>
+                </tbody>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+{% endblock %}

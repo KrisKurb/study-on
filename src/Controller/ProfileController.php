@@ -4,7 +4,9 @@
 namespace App\Controller;
 
 use App\Exception\BillingUnavailableException;
+use App\Model\TransactionDto;
 use App\Model\UserDto;
+use App\Repository\CourseRepository;
 use App\Service\BillingClient;
 use App\Service\DecodingJwt;
 use JMS\Serializer\SerializerInterface;
@@ -46,6 +48,41 @@ class ProfileController extends AbstractController
 
         return $this->render('profile/index.html.twig', [
             'userDto' => $userDto,
+        ]);
+    }
+
+    /**
+     * @Route("/transactions", name="profile_transactions")
+     * @throws \Exception
+     */
+    public function history(CourseRepository $courseRepository): Response
+    {
+        try {
+            /** @var TransactionDto[] $transactionsDto */
+            $transactionsDto = $this->billingClient->transactions($this->getUser());
+
+            $courses = $courseRepository->findAll();
+
+            $coursesData = [];
+            foreach ($transactionsDto as $transactionDto) {
+                foreach ($courses as $course) {
+                    if ($transactionDto && $transactionDto->getCourseCode() === $course->getCode()) {
+                        $coursesData[$transactionDto->getCourseCode()] = [
+                            'id' => $course->getId(),
+                            'name' => $course->getName(),
+                        ];
+                    }
+                }
+            }
+        } catch (BillingUnavailableException $e) {
+            throw new \Exception($e->getMessage());
+        } catch (\Exception $e) {
+            throw new \Exception($e->getMessage());
+        }
+
+        return $this->render('profile/transactions.html.twig', [
+            'transactionsDto' => $transactionsDto,
+            'courses' => $coursesData,
         ]);
     }
 }

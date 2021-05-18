@@ -3,6 +3,16 @@
 {% block title %}Course index{% endblock %}
 
 {% block body %}
+    
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    {% endfor %}
+
     <h1 class="font-weight-bold m-3">Курсы</h1>
         {#перебираем курсы#}
             <div class="row row-cols-2 mt-4">
@@ -10,9 +20,92 @@
                 <div class="col pl-3 pr-3 pb-4">
                     <div class="card">
                         <div class="card-body">
-                            <h4 class="card-title">{{ course.name }}</h4>
-                            <p class="card-text text-secondary ">{{ course.description }}</p>
-                            <a href="{{ path('course_show', {'id': course.id}) }} " id="course_select">Выбрать</a>
+                            <h5 class="card-title">{{ course.name }}</h5>
+                            <p class="card-text">{{ course.description }}</p>
+                            {% if is_granted('ROLE_SUPER_ADMIN') %}
+                                <a href="{{ path('course_show', {'id': course.id}) }}" class="card-link">
+                                    Открыть
+                                </a>
+                            {% elseif coursesData != NULL and
+                                coursesData[course.code].course.type == 'free' %}
+                                <p><strong>Бесплатно</strong></p>
+                                <a href="{{ path('course_show', {'id': course.id}) }}" class="card-link">
+                                    Открыть
+                                </a>
+                            {% elseif coursesData != NULL and
+                                coursesData[course.code].course.type == 'buy' and
+                                coursesData[course.code].transaction != NULL %}
+                                <p><strong>Куплено</strong></p>
+                                <a href="{{ path('course_show', {'id': course.id}) }}" class="card-link">
+                                    Открыть
+                                </a>
+                            {% elseif coursesData != NULL and
+                                coursesData[course.code].course.type == 'buy' and
+                                coursesData[course.code].transaction == NULL %}
+                                {% if balance is defined and
+                                    balance >= coursesData[course.code].course.price %}
+                                    <button
+                                            class="card-link btn btn-info"
+                                            data-toggle="modal"
+                                            data-target="#payModal-{{ course.code }}"
+                                    >
+                                        Приобрести за {{ coursesData[course.code].course.price }}
+                                    </button>
+                                {% elseif balance is defined and
+                                    balance < coursesData[course.code].course.price %}
+                                    <button type="button" class="btn btn-info" disabled>
+                                        Приобрести за {{ coursesData[course.code].course.price }}
+                                    </button>
+                                {% endif %}
+                            {% elseif coursesData != NULL and
+                                coursesData[course.code].course.type == 'rent' and
+                                coursesData[course.code].transaction != NULL %}
+                                <p><strong>Аренда до {{ coursesData[course.code].transaction.expiresAt }}</strong></p>
+                                <a href="{{ path('course_show', {'id': course.id}) }}" class="card-link">
+                                    Открыть
+                                </a>
+                            {% elseif coursesData != NULL and
+                                coursesData[course.code].course.type == 'rent' and
+                                coursesData[course.code].transaction == NULL %}
+                                {% if balance is defined and
+                                    balance >= coursesData[course.code].course.price %}
+                                    <button
+                                            class="card-link btn btn-info"
+                                            data-toggle="modal"
+                                            data-target="#payModal-{{ course.code }}"
+                                    >
+                                        Арендовать за {{ coursesData[course.code].course.price }}
+                                    </button>
+                                {% elseif balance is defined and
+                                    balance < coursesData[course.code].course.price %}
+                                    <button type="button" class="btn btn-info" disabled>
+                                        Арендовать за {{ coursesData[course.code].course.price }}
+                                    </button>
+                                {% endif %}
+                            {% endif %}
+                            
+                            <div class="modal fade" id="payModal-{{ course.code }}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                <div class="modal-dialog" role="document">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="exampleModalLabel">
+                                                Покупка курса course.name
+                                            </h5>
+                                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                <span aria-hidden="true">&times;</span>
+                                            </button>
+                                        </div>
+                                        <div class="modal-body">
+                                            Вы уверены, что хотите приобрести этот курс?
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Нет</button>
+                                            <a class="btn btn-outline-info" role="button"
+                                               href="{{ path('course_pay', {'course_code': course.code}) }}">Да</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -23,5 +116,7 @@
         {% endfor %}
             </div>
     <div class="line mt-4 mb-4"></div>
-    <a href="{{ path('course_new') }}" id="course_new" class="btn btn-outline-warning mr-3">Новый курс</a>
+    {% if is_granted('ROLE_SUPER_ADMIN') %}
+        <a href="{{ path('course_new') }}" id="course_new" class="btn btn-outline-warning mr-3">Новый курс</a>
+    {% endif %}
 {% endblock %}

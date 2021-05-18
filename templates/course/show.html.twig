@@ -13,11 +13,12 @@
             </ol>
     <div class="line mt-4 mb-4"></div>
     <div class="d-flex">
-    <a href="{{ path('course_index') }}" class="btn btn-outline-secondary ml-2 mr-3">К списку курсов</a>
+        <a href="{{ path('course_index') }}" class="btn btn-outline-secondary ml-2 mr-3">К списку курсов</a>
+        {% if is_granted('ROLE_SUPER_ADMIN') %}
+            <a href="{{ path('course_edit', {'id': course.id}) }}" id="course_edit" class="course__edit btn btn-outline-secondary mr-3">Редактировать</a>
 
-    <a href="{{ path('course_edit', {'id': course.id}) }}" id="course_edit" class="course__edit btn btn-outline-secondary mr-3">Редактировать</a>
-
-    <a href="{{ path('lesson_new', {'course_id': course.id}) }}" id="lesson_new" class="btn btn-outline-secondary mr-3">Добавить урок</a>
-        {{ include('course/_delete_form.html.twig') }}
+            <a href="{{ path('lesson_new', {'course_id': course.id}) }}" id="lesson_new" class="btn btn-outline-secondary mr-3">Добавить урок</a>
+            {{ include('course/_delete_form.html.twig') }}
+        {% endif %}
     </div>
 {% endblock %}

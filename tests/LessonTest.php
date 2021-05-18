@@ -5,27 +5,38 @@ namespace App\Tests;
 use App\DataFixtures\AppFixtures;
 use App\Entity\Course;
 use App\Entity\Lesson;
+use App\Tests\Login\Auth;
+use JMS\Serializer\SerializerInterface;
 
 class LessonTest extends AbstractTest
 {
     // Стартовая страница курсов
-    private $PageCourse = '/course';
+    private $PageCourse = '/courses';
     // Стартовая страница уроков
     private $PageLesson = '/lesson';
 
-    // Переопределение метода для фикстур
+    /** @var SerializerInterface */
+    private $serializer;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->serializer = self::$container->get(SerializerInterface::class);
+    }
+
+
     protected function getFixtures(): array
     {
         return [AppFixtures::class];
     }
 
-    // Метод вызова стартовой страницы курсов
+    // Вызов стартовой страницы курсов
     public function getPageCourse(): string
     {
         return $this->PageCourse;
     }
 
-    // Метод вызова старовой страницы уроков
+    // Вызов старовой страницы уроков
     public function getPageLesson(): string
     {
         return $this->PageLesson;
@@ -34,19 +45,25 @@ class LessonTest extends AbstractTest
     /**
      * @dataProvider urlProvider
      */
-    // Проверяем корректно ли отображаются страницы уроков
+        // Проверяем корректно ли отображаются страницы уроков
     public function testPageIsSuccessful($url): void
     {
-        // Эмуляция клиента
+        $auth = new Auth();
+        $auth->setSerializer($this->serializer);
+        // Авторизуемся обычным пользователем
+        $data = [
+            'username' => 'user@mail.ru',
+            'password' => '123456'
+        ];
+        $requestData = $this->serializer->serialize($data, 'json');
+        $crawler = $auth->auth($requestData);
         $client = self::getClient();
-        // Клиент переходит на определенный url
         $client->request('GET', $url);
-        // Проверяем, что ответ от страницы успешный
+        // Проверим ответ от страницы
         self::assertResponseIsSuccessful();
 
-        // Проверка 404 ошибки
+        // Проверим на 404 ошибку
         $client = self::getClient();
-        // Переходим по несуществующему пути
         $url = $this->getPageLesson() . '/745';
         $client->request('GET', $url);
         $this->assertResponseNotFound();
@@ -56,87 +73,91 @@ class LessonTest extends AbstractTest
         yield [$this->getPageLesson() . '/'];
     }
 
-    // Тест страницы добавления урока
+        // Тест на добавления урока
     public function testLessonNew(): void
     {
-        // Начинаем с главной страницы курсов
+        $auth = new Auth();
+        $auth->setSerializer($this->serializer);
+        // Авторизуемся админом
+        $data = [
+            'username' => 'admin@mail.ru',
+            'password' => '123456'
+        ];
+        $requestData = $this->serializer->serialize($data, 'json');
+        $crawler = $auth->auth($requestData);
+
         $client = self::getClient();
         $crawler = $client->request('GET', $this->getPageCourse() . '/');
         $this->assertResponseOk();
 
         // Перейдём к последнему курсу
-        $link = $crawler->filter('#course_select')->last()->link();
+        $link = $crawler->filter('a.card-link')->last()->link();
         $crawler = $client->click($link);
         $this->assertResponseOk();
 
-        // Перейдём к форме добавления
+
         $link = $crawler->filter('#lesson_new')->link();
         $crawler = $client->click($link);
         $this->assertResponseOk();
 
-        // Заполнение полей формы
+        // Заполненим поля формы
         $form = $crawler->selectButton('lesson_save')->form();
         // Изменяем поля в форме
         $form['lesson[name]'] = 'Тест';
         $form['lesson[material]'] = 'Тест';
         $form['lesson[number]'] = '11';
 
-        // Получим id созданного курса
+        // Получим id курса, который создали
         $course = static::getEntityManager()->getRepository(Course::class)->
         findOneBy(['id' => $form['lesson[course]']->getValue()]);
         self::assertNotEmpty($course);
-        // Отправляем форму
+        // Отправим форму
         $client->submit($form);
-        // Проверка редиректа на страницу курса
+        // Проверка редиректа
         self::assertTrue($client->getResponse()->isRedirect($this->getPageCourse() . '/' . $course->getId()));
-        // Переходим на страницу добавленного урока
         $crawler = $client->followRedirect();
         $this->assertResponseOk();
 
-        // Перейдём на страницу добавленного урока
+        // Перейдем на страницу урока, который добавили
         $link = $crawler->filter('ol > li > a')->first()->link();
         $client->click($link);
         $this->assertResponseOk();
 
         // Удалим урок
         $client->submitForm('lesson_delete');
-        // Проверка редиректа на страницу курса
+        // Проверим редирект
         self::assertTrue($client->getResponse()->isRedirect($this->getPageCourse() . '/' . $course->getId()));
-        // Переходим на страницу редиректа
         $crawler = $client->followRedirect();
         $this->assertResponseOk();
 
         // Проверим заполнение формы невалидными значениями
-        // Невалидное значение name
-        // Страница с курсами
         $client = self::getClient();
         $crawler = $client->request('GET', $this->getPageCourse() . '/');
         $this->assertResponseOk();
 
-        // Перейдём к последнему курсу
-        $link = $crawler->filter('#course_select')->last()->link();
+        // Перейдем к последнему курсу
+        $link = $crawler->filter('a.card-link')->last()->link();
         $crawler = $client->click($link);
         $this->assertResponseOk();
 
-        // Перейдём к форме добавления
+        // Перейдем к форме добавления
         $link = $crawler->filter('#lesson_new')->link();
         $crawler = $client->click($link);
         $this->assertResponseOk();
 
-        // Передадим пустое значение в поле name
-        // Заполнение полей формы
+        // Заполнение формы
         $crawler = $client->submitForm('lesson_save', [
             'lesson[name]' => '',
             'lesson[material]' => 'Тест',
             'lesson[number]' => '10',
         ]);
 
-        // Список ошибок
+        // Ошибки
         $error = $crawler->filter('span.form-error-message')->last();
         self::assertEquals('Name can not be blank', $error->text());
 
         // Проверка перезаполнения поля name (более 255 символов)
-        // Заполнение полей формы
+        // Заполнение формы
         $crawler = $client->submitForm('lesson_save', [
             'lesson[name]' => 'kfdjkjdklxmvdsssssssssssssssdsssssssssssssssssssssssssffffff
             fffffffffffffffffffffffffffffjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjsssssssssssssssssssee
@@ -146,27 +167,25 @@ class LessonTest extends AbstractTest
             'lesson[number]' => '10',
         ]);
 
-        // Список ошибок
+        // Ошибки
         $error = $crawler->filter('span.form-error-message')->last();
         self::assertEquals('Name max length is 255 symbols', $error->text());
 
-        // Тест страницы добавления урока с невалидным полем material
-        // Страница с курсами
+        // Невалидным поле material
         $client = self::getClient();
         $crawler = $client->request('GET', $this->getPageCourse() . '/');
         $this->assertResponseOk();
 
-        // Перейдём к последнему курсу по ссылке
-        $link = $crawler->filter('#course_select')->last()->link();
+        // Перейдем к последнему курсу
+        $link = $crawler->filter('a.card-link')->last()->link();
         $crawler = $client->click($link);
         $this->assertResponseOk();
 
-        // Перейдём к форме добавления
+        // Перейдем к форме добавления
         $link = $crawler->filter('#lesson_new')->link();
         $crawler = $client->click($link);
         $this->assertResponseOk();
 
-        // Передадим пустое значение в поле material
         // Заполненим поля формы
         $crawler = $client->submitForm('lesson_save', [
             'lesson[name]' => 'Тест',
@@ -174,27 +193,25 @@ class LessonTest extends AbstractTest
             'lesson[number]' => '11',
         ]);
 
-        // Список ошибок
+        // Ошибки
         $error = $crawler->filter('span.form-error-message')->last();
         self::assertEquals('Material field can not be empty', $error->text());
 
-        // Тест страницы добавления урока с невалидным полем number
-        // Страница с курсами
+        // Тест на добавление урока с невалидным полем number
         $client = self::getClient();
         $crawler = $client->request('GET', $this->getPageCourse() . '/');
         $this->assertResponseOk();
 
-        // Перейдём к последнему курсу
-        $link = $crawler->filter('#course_select')->last()->link();
+        // Перейдем к последнему курсу
+        $link = $crawler->filter('a.card-link')->last()->link();
         $crawler = $client->click($link);
         $this->assertResponseOk();
 
-        // Перейдём к форме добавления
+        // Перейдем к форме добавления
         $link = $crawler->filter('#lesson_new')->link();
         $crawler = $client->click($link);
         $this->assertResponseOk();
 
-        // Передадим пустое значение в поле number
         // Заполненим форму
         $crawler = $client->submitForm('lesson_save', [
             'lesson[name]' => 'Тест',
@@ -202,35 +219,44 @@ class LessonTest extends AbstractTest
             'lesson[number]' => '',
         ]);
 
-        // Список ошибок
+        // Ошибки
         $error = $crawler->filter('span.form-error-message')->last();
         self::assertEquals('Number field can not be empty', $error->text());
     }
 
-    // Тест страницы редактирование урока
+        // Тест редактирования урока
     public function testLessonEdit(): void
     {
-        // Начинаем с главной страницы с курсами
+        $auth = new Auth();
+        $auth->setSerializer($this->serializer);
+        // Авторизуемся админом
+        $data = [
+            'username' => 'admin@mail.ru',
+            'password' => '123456'
+        ];
+        $requestData = $this->serializer->serialize($data, 'json');
+        $crawler = $auth->auth($requestData);
+        // Главная страница с курсами
         $client = self::getClient();
         $crawler = $client->request('GET', $this->getPageCourse() . '/');
         $this->assertResponseOk();
 
-        // Перейдём к последнему курсу
-        $link = $crawler->filter('#course_select')->last()->link();
+        // Перейдем к последнему курсу
+        $link = $crawler->filter('a.card-link')->last()->link();
         $crawler = $client->click($link);
         $this->assertResponseOk();
 
-        // Перейдём к последнему уроку
+        // Перейдем к последнему уроку
         $link = $crawler->filter('ol > li > a')->last()->link();
         $crawler = $client->click($link);
         $this->assertResponseOk();
 
-        // Нажмём на редактирования курса
+        // Форма редактирования
         $link = $crawler->filter('#lesson_edit')->last()->link();
         $crawler = $client->click($link);
         $this->assertResponseOk();
 
-        // Заполнение полей формы
+        // Заполнение формы
         $form = $crawler->selectButton('lesson_save')->form();
         // Получаем урок по номеру
         $lesson = self::getEntityManager()->getRepository(Lesson::class)->findOneBy([
@@ -238,15 +264,14 @@ class LessonTest extends AbstractTest
             'course' => $form['lesson[course]']->getValue(),
         ]);
 
-        // Изменяем поля в форме
+        // Изменим поля в форме
         $form['lesson[name]'] = 'Test';
         $form['lesson[material]'] = 'Test';
 
-        // Отправляем форму
+        // Отправим форму
         $client->submit($form);
-        // Проверка редиректа на страницу урока
+        // Проверка редиректа
         self::assertTrue($client->getResponse()->isRedirect($this->getPageLesson() . '/' . $lesson->getId()));
-        // Переходим на страницу редиректа
         $crawler = $client->followRedirect();
         $this->assertResponseOk();
     }

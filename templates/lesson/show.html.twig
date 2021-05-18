@@ -7,9 +7,10 @@
     <h2 class="m-3"><a href="{{ path('course_show', {'id': lesson.course.id}) }}">{{ lesson.course.name }}</a></h2>
 
     <div class="d-flex mt-3 mb-4">
-    <a href="{{ path('course_show', {'id': lesson.course.id}) }}" class="btn btn-outline-secondary ml-2 mr-3">К списку уроков</a>
-
-    <a href="{{ path('lesson_edit', {'id': lesson.id}) }}" id="lesson_edit" class="btn btn-outline-secondary mr-3">Редактировать</a>
+        <a href="{{ path('course_show', {'id': lesson.course.id}) }}" class="btn btn-outline-secondary ml-2 mr-3">К списку уроков</a>
+        {% if is_granted('ROLE_SUPER_ADMIN') %}
+        <a href="{{ path('lesson_edit', {'id': lesson.id}) }}" id="lesson_edit" class="btn btn-outline-secondary mr-3">Редактировать</a>
+        {{ include('lesson/_delete_form.html.twig') }}
+        {% endif %}
     </div>
-    {{ include('lesson/_delete_form.html.twig') }}
 {% endblock %}
